@@ -10,6 +10,8 @@ import requests
 import telebot
 from dotenv import load_dotenv
 
+from exceptions import MissingTokensError
+
 load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
@@ -25,12 +27,6 @@ HOMEWORK_VERDICTS = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
-
-
-class MissingTokensError(Exception):
-    """Исключение при отсутствии обязательных переменных окружения."""
-
-    pass
 
 
 def send_message(bot, message):
@@ -126,7 +122,7 @@ def check_response(response):
     """
     if not isinstance(response, dict):
         raise TypeError(
-            f'Ответ API должен быть словарём, '
+            'Ответ API должен быть словарём, '
             f'получен {type(response).__name__}'
         )
 
@@ -137,7 +133,7 @@ def check_response(response):
 
     if not isinstance(homeworks, list):
         raise TypeError(
-            f'homeworks должен быть списком, '
+            'homeworks должен быть списком, '
             f'получен {type(homeworks).__name__}'
         )
 
@@ -175,9 +171,6 @@ def parse_status(homework):
 def check_tokens():
     """Проверяет наличие всех необходимых переменных окружения.
 
-    Returns:
-        bool: True если все переменные доступны
-
     Raises:
         MissingTokensError: Если отсутствуют обязательные переменные
     """
@@ -190,20 +183,17 @@ def check_tokens():
     missing_tokens = [name for name, value in tokens.items() if not value]
 
     if missing_tokens:
-        raise MissingTokensError(
-            f'Отсутствуют обязательные переменные окружения: '
+        error_message = (
+            'Отсутствуют обязательные переменные окружения: '
             f'{", ".join(missing_tokens)}'
         )
-    return True
+        logging.critical(error_message)
+        raise MissingTokensError(error_message)
 
 
 def main():
     """Основная логика работы бота."""
-    try:
-        check_tokens()
-    except MissingTokensError as error:
-        logging.critical(str(error))
-        sys.exit(1)
+    check_tokens()
 
     bot = telebot.TeleBot(TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
